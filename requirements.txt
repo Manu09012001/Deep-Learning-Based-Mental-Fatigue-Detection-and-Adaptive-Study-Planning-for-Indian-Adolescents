@@ -1,4 +1,4 @@
-torch
+/*torch
 torchvision
 torchaudio
 numpy
@@ -8,4 +8,4 @@ matplotlib
 opencv-python
 streamlit
 jupyter
-tqdm
+tqdm*/
