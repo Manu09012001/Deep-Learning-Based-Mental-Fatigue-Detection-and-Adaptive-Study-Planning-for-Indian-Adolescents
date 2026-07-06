@@ -1,59 +1,78 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+import random
 
-# Make results reproducible
-np.random.seed(42)
+def simulate_student_data(num_samples=5000, seed=42):
+    """
+    Generate synthetic dataset for Mental Fatigue Detection
+    for Indian adolescent study behavior.
+    """
 
-# Number of samples
-num_samples = 5000
+    np.random.seed(seed)
+    random.seed(seed)
 
-# Create synthetic study behaviour dataset
-data = {
-    "Student_ID": np.arange(1, num_samples + 1),
-    "Study_Hours": np.round(np.random.uniform(0.5, 8, num_samples), 2),
-    "Break_Frequency": np.random.randint(0, 10, num_samples),
-    "Sleep_Hours": np.round(np.random.uniform(3, 10, num_samples), 2),
-    "Screen_Time": np.round(np.random.uniform(1, 12, num_samples), 2),
-    "Typing_Speed": np.random.randint(20, 90, num_samples),
-    "Mouse_Clicks": np.random.randint(100, 2000, num_samples),
-    "Stress_Level": np.random.randint(1, 11, num_samples),
-    "Mood_Score": np.random.randint(1, 11, num_samples)
-}
+    data = []
 
-df = pd.DataFrame(data)
+    for i in range(num_samples):
 
-# Rule-based fatigue labels (placeholder for model training)
-fatigue = []
+        # Basic behavioral features
+        study_hours = np.random.normal(4, 1.5)          # avg study time
+        sleep_hours = np.random.normal(7, 1.2)          # sleep duration
+        screen_time = np.random.normal(6, 2)            # mobile/laptop usage
 
-for _, row in df.iterrows():
-    score = 0
+        break_time = np.random.normal(1.5, 0.5)         # breaks during study
+        stress_level = np.random.randint(1, 10)         # self-reported stress (1-10)
 
-    if row["Sleep_Hours"] < 6:
-        score += 2
+        # Ensure no negative values
+        study_hours = max(0, study_hours)
+        sleep_hours = max(0, sleep_hours)
+        screen_time = max(0, screen_time)
+        break_time = max(0, break_time)
 
-    if row["Study_Hours"] > 5:
-        score += 2
+        # Fatigue logic (rule + noise)
+        fatigue_score = (
+            (study_hours * 0.4) +
+            (screen_time * 0.3) +
+            (stress_level * 0.2) -
+            (sleep_hours * 0.3) -
+            (break_time * 0.2)
+        )
 
-    if row["Stress_Level"] >= 7:
-        score += 2
+        # Normalize fatigue score into probability
+        fatigue_prob = 1 / (1 + np.exp(-0.5 * (fatigue_score - 5)))
 
-    if row["Screen_Time"] > 7:
-        score += 1
+        # Binary label
+        fatigue_label = 1 if fatigue_prob > 0.5 else 0
 
-    if row["Mood_Score"] <= 4:
-        score += 2
+        data.append([
+            study_hours,
+            sleep_hours,
+            screen_time,
+            break_time,
+            stress_level,
+            fatigue_score,
+            fatigue_label
+        ])
 
-    if score <= 2:
-        fatigue.append("Low")
-    elif score <= 5:
-        fatigue.append("Moderate")
-    else:
-        fatigue.append("High")
+    df = pd.DataFrame(data, columns=[
+        "study_hours",
+        "sleep_hours",
+        "screen_time",
+        "break_time",
+        "stress_level",
+        "fatigue_score",
+        "fatigue_label"
+    ])
 
-df["Fatigue_Level"] = fatigue
+    return df
 
-# Save dataset
-df.to_csv("data/raw/sample_dataset.csv", index=False)
 
-print("Dataset created successfully!")
-print(df.head())
+def save_dataset(path="mental_fatigue_dataset.csv", samples=5000):
+    df = simulate_student_data(samples)
+    df.to_csv(path, index=False)
+    print(f"Dataset saved at: {path}")
+
+
+if __name__ == "__main__":
+    save_dataset()
+
