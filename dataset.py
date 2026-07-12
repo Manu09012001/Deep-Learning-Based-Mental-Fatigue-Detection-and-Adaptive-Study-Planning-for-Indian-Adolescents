@@ -4,7 +4,7 @@ import random
 
 import os
 
-def load_dataset(path="C:\Users\HP\OneDrive\Desktop\student_habits_performance.csv"):
+def load_dataset(path="student_habits_performance.csv"):
     """
     Load the Kaggle Student Habits vs Academic Performance dataset.
     """
