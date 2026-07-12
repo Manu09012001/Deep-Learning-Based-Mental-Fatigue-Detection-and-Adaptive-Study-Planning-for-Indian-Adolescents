@@ -9,7 +9,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 
-def load_data(path="mental_fatigue_dataset.csv"):
+def load_data(path="student_habits_performance.csv"):
     df = pd.read_csv(path)
 
     X = df.drop("fatigue_label", axis=1)
