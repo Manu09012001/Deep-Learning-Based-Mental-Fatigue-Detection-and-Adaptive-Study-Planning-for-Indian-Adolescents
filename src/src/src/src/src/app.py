@@ -12,7 +12,7 @@ model = tf.keras.models.load_model("fatigue_model.h5")
 
 
 # Load dataset for scaler fitting (simple approach)
-df = pd.read_csv("mental_fatigue_dataset.csv")
+df = pd.read_csv("student_habits_performance.csv")
 X = df.drop("fatigue_label", axis=1)
 
 scaler = StandardScaler()
