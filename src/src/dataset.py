@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-def load_dataset(path=""):
+def load_dataset(path="student_habits_performance.csv"):
     """
     Load the Kaggle Student Habits vs Academic Performance dataset.
     """
