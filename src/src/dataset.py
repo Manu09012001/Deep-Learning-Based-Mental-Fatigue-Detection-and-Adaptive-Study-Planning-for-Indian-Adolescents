@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-def load_dataset(path="https://drive.google.com/drive/u/0/folders/1lPMbQ3lCGXUuG3W6zjZdyf10IhEyXjmo"):
+def load_dataset(path=""):
     """
     Load the Kaggle Student Habits vs Academic Performance dataset.
     """
