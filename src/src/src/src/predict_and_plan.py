@@ -14,7 +14,7 @@ def load_model(model_path="fatigue_model.h5"):
 
 
 # Load dataset to fit scaler (simple approach for demo)
-def get_scaler(data_path="mental_fatigue_dataset.csv"):
+def get_scaler(data_path="student_habits_performance.csv"):
     df = pd.read_csv(data_path)
 
     X = df.drop("fatigue_label", axis=1)
