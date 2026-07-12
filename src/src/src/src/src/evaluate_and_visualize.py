@@ -7,7 +7,7 @@ import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 
 
-def load_data(path="mental_fatigue_dataset.csv"):
+def load_data(path="student_habits_performance.csv"):
     df = pd.read_csv(path)
 
     X = df.drop("fatigue_label", axis=1)
