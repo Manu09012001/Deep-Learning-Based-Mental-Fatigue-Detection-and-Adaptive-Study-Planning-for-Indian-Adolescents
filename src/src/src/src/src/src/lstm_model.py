@@ -10,7 +10,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 
 
 def load_data():
-    df = pd.read_csv("mental_fatigue_dataset.csv")
+    df = pd.read_csv("student_habits_performance.csv")
 
     X = df.drop("fatigue_label", axis=1).values
     y = df["fatigue_label"].values
