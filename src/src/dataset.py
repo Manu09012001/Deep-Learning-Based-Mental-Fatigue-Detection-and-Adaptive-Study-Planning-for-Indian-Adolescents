@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-def load_dataset(path="student_habits_performance_with_fatigue"):
+def load_dataset(path="student_habits_performance_with_fatigue.csv"):
 
     if not os.path.exists(path):
         raise FileNotFoundError(
