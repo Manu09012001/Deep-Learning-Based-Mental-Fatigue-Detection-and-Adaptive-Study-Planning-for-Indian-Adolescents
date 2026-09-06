@@ -1,14 +1,11 @@
 import pandas as pd
 import os
 
-def load_dataset(path="student_habits_performance.csv"):
-    """
-    Load the Kaggle Student Habits vs Academic Performance dataset.
-    """
+def load_dataset(path="student_habits_performance_with_fatigue"):
 
     if not os.path.exists(path):
         raise FileNotFoundError(
-            f"Dataset not found at {path}. Please download it from Kaggle "
+            f"Dataset not found at {path}. Please download it from link "
             "and place it in the data folder."
         )
 
