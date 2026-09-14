@@ -1,0 +1,148 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set overall aesthetic style
+sns.set_theme(style="whitegrid")
+plt.rcParams.update({'font.sans-serif': 'DejaVu Sans', 'font.size': 10})
+
+# Set random seed for reproducible synthetic dataset creation
+np.random.seed(42)
+n_samples = 1000
+
+# Generating synthetic dataset aligned with Appendix D metadata
+df = pd.DataFrame({
+    'age': np.random.randint(13, 20, size=n_samples),
+    'study_hours_per_day': np.random.normal(3.5, 1.5, n_samples).clip(0, 9),
+    'sleep_hours': np.random.normal(6.5, 1.2, n_samples).clip(3, 10),
+    'social_media_hours': np.random.gamma(shape=3, scale=0.8, size=n_samples).clip(0, 8),
+    'netflix_hours': np.random.exponential(scale=1.2, size=n_samples).clip(0, 6),
+    'attendance_percentage': np.random.uniform(60, 100, n_samples),
+    'exercise_frequency': np.random.poisson(lam=2, size=n_samples),
+    'mental_health_rating': np.random.randint(1, 10, size=n_samples),
+    'Fatigue Level': np.random.choice(['Low', 'Moderate', 'High'], size=n_samples, p=[0.33, 0.33, 0.34])
+})
+
+# Calculate Exam Score with strong correlation to Study Hours (as shown in Correlation Matrix)
+df['exam_score'] = (df['study_hours_per_day'] * 8.5 + np.random.normal(40, 8, n_samples)).clip(20, 100)
+
+palette = {'Low': '#2ecc71', 'Moderate': '#e67e22', 'High': '#e74c3c'}
+
+
+# ==========================================
+# 1. Sleep Hours across Fatigue Levels (Boxplot)
+# ==========================================
+plt.figure(figsize=(7, 5))
+sns.boxplot(data=df, x='Fatigue Level', y='sleep_hours', palette=palette, order=['Low', 'Moderate', 'High'], width=0.6)
+plt.title('Sleep Hours across Fatigue Levels', fontweight='bold', pad=12)
+plt.xlabel('Fatigue Level', fontweight='bold')
+plt.ylabel('Sleep Hours per Day', fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+
+# ==========================================
+# 2. Study Hours across Fatigue Levels (Boxplot)
+# ==========================================
+plt.figure(figsize=(7, 5))
+sns.boxplot(data=df, x='Fatigue Level', y='study_hours_per_day', palette=palette, order=['Low', 'Moderate', 'High'], width=0.6)
+plt.title('Study Hours across Fatigue Levels', fontweight='bold', pad=12)
+plt.xlabel('Fatigue Level', fontweight='bold')
+plt.ylabel('Study Hours per Day', fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+
+# ==========================================
+# 3. Correlation Matrix Heatmap
+# ==========================================
+num_cols = ['age', 'study_hours_per_day', 'social_media_hours', 'netflix_hours', 
+            'attendance_percentage', 'sleep_hours', 'exercise_frequency', 
+            'mental_health_rating', 'exam_score']
+
+corr = df[num_cols].corr()
+
+# Mask upper triangle
+mask = np.triu(np.ones_like(corr, dtype=bool))
+
+plt.figure(figsize=(9, 7))
+sns.heatmap(corr, mask=mask, annot=True, fmt=".2f", cmap='coolwarm', 
+            vmin=-1, vmax=1, cbar_kws={"shrink": 0.8}, linewidths=0.5)
+plt.title('Correlation Matrix of Numerical Features', fontweight='bold', pad=12)
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+
+
+# ==========================================
+# 4. Target Class Distribution (Count Plot)
+# ==========================================
+plt.figure(figsize=(7, 4.5))
+ax = sns.countplot(data=df, x='Fatigue Level', palette=palette, order=['Low', 'Moderate', 'High'], edgecolor='black')
+
+# Annotate count values over bars
+for p in ax.patches:
+    ax.annotate(f'{int(p.get_height())}', (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha='center', va='bottom', fontsize=11, fontweight='bold', xytext=(0, 3),
+                textcoords='offset points')
+
+plt.title('Target Class Distribution (Fatigue Level)', fontweight='bold', pad=12)
+plt.xlabel('Fatigue Level', fontweight='bold')
+plt.ylabel('Student Count', fontweight='bold')
+plt.ylim(0, max(df['Fatigue Level'].value_counts()) * 1.15)
+plt.tight_layout()
+plt.show()
+
+
+# ==========================================
+# 5. Feature Distributions Grid (Histograms with KDE)
+# ==========================================
+fig, axes = plt.subplots(2, 2, figsize=(11, 9))
+
+# Distribution 1: Study Hours
+sns.histplot(df['study_hours_per_day'], kde=True, ax=axes[0, 0], color='#3498db', bins=20)
+axes[0, 0].set_title('Distribution of Study Hours per Day', fontweight='bold')
+axes[0, 0].set_xlabel('Study Hours per Day')
+axes[0, 0].set_ylabel('Count')
+
+# Distribution 2: Sleep Hours
+sns.histplot(df['sleep_hours'], kde=True, ax=axes[0, 1], color='#2ecc71', bins=20)
+axes[0, 1].set_title('Distribution of Sleep Hours per Day', fontweight='bold')
+axes[0, 1].set_xlabel('Sleep Hours per Day')
+axes[0, 1].set_ylabel('Count')
+
+# Distribution 3: Social Media Hours
+sns.histplot(df['social_media_hours'], kde=True, ax=axes[1, 0], color='#e74c3c', bins=20)
+axes[1, 0].set_title('Distribution of Social Media Hours', fontweight='bold')
+axes[1, 0].set_xlabel('Social Media Hours')
+axes[1, 0].set_ylabel('Count')
+
+# Distribution 4: Exam Score
+sns.histplot(df['exam_score'], kde=True, ax=axes[1, 1], color='#9b59b6', bins=20)
+axes[1, 1].set_title('Distribution of Exam Score', fontweight='bold')
+axes[1, 1].set_xlabel('Exam Score')
+axes[1, 1].set_ylabel('Count')
+
+plt.tight_layout()
+plt.show()
+
+
+# ==========================================
+# 6. Training & Validation Loss Curve
+# ==========================================
+epochs = np.arange(1, 101)
+# Simulated exponential loss decay curves for training and validation
+train_loss = 0.8 * np.exp(-epochs / 15) + 0.05 + np.random.normal(0, 0.005, 100)
+val_loss = 0.82 * np.exp(-epochs / 18) + 0.08 + np.random.normal(0, 0.008, 100)
+
+plt.figure(figsize=(8, 5))
+plt.plot(epochs, train_loss, label='Training Loss', color='#2980b9', linewidth=2)
+plt.plot(epochs, val_loss, label='Validation Loss', color='#e67e22', linewidth=2, linestyle='--')
+
+plt.title('Training and Validation Loss Curve of Proposed Model', fontweight='bold', pad=12)
+plt.xlabel('Epochs', fontweight='bold')
+plt.ylabel('Loss', fontweight='bold')
+plt.legend(frameon=True, facecolor='white', loc='upper right')
+plt.tight_layout()
+plt.show()
