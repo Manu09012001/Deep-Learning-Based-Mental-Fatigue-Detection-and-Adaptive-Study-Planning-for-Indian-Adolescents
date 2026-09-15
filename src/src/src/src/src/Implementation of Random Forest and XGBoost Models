@@ -1,0 +1,332 @@
+# ============================================================
+# 1. IMPORT LIBRARIES
+# ============================================================
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    confusion_matrix,
+    classification_report,
+    ConfusionMatrixDisplay,
+    RocCurveDisplay
+)
+
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+
+
+# ============================================================
+# 2. LOAD DATA
+# ============================================================
+
+df = pd.read_csv("student_habits_performance_with_fatigue.csv")
+
+print("Dataset shape:", df.shape)
+print(df.head())
+
+
+# ============================================================
+# 3. DEFINE TARGET VARIABLE
+# ============================================================
+
+# Change this if your target column has another name
+target = "mental_fatigue"
+
+X = df.drop(columns=[target])
+y = df[target]
+
+
+# ============================================================
+# 4. HANDLE CATEGORICAL VARIABLES
+# ============================================================
+
+# Convert categorical columns into dummy variables
+X = pd.get_dummies(X, drop_first=True)
+
+# Make sure target is numeric
+if y.dtype == "object":
+    y = y.map({
+        "Low": 0,
+        "High": 1,
+        "No": 0,
+        "Yes": 1
+    })
+
+# Remove missing values
+X = X.fillna(X.median(numeric_only=True))
+y = y.fillna(y.mode()[0])
+
+
+# ============================================================
+# 5. TRAIN-TEST SPLIT
+# ============================================================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.30,
+    random_state=42,
+    stratify=y
+)
+
+print("Training data:", X_train.shape)
+print("Testing data:", X_test.shape)
+
+
+# ============================================================
+# 6. RANDOM FOREST
+# ============================================================
+
+rf = RandomForestClassifier(
+    random_state=42,
+    class_weight="balanced"
+)
+
+rf_params = {
+    "n_estimators": [100, 200, 300, 500],
+    "max_depth": [None, 5, 10, 15, 20],
+    "min_samples_split": [2, 5, 10],
+    "min_samples_leaf": [1, 2, 4],
+    "max_features": ["sqrt", "log2"]
+}
+
+rf_search = RandomizedSearchCV(
+    estimator=rf,
+    param_distributions=rf_params,
+    n_iter=20,
+    scoring="roc_auc",
+    cv=5,
+    random_state=42,
+    n_jobs=-1
+)
+
+rf_search.fit(X_train, y_train)
+
+best_rf = rf_search.best_estimator_
+
+print("\nBest Random Forest Parameters:")
+print(rf_search.best_params_)
+
+
+# ============================================================
+# 7. XGBOOST
+# ============================================================
+
+xgb = XGBClassifier(
+    objective="binary:logistic",
+    eval_metric="logloss",
+    random_state=42,
+    n_jobs=-1
+)
+
+xgb_params = {
+    "n_estimators": [100, 200, 300, 500],
+    "max_depth": [3, 4, 5, 6, 8],
+    "learning_rate": [0.01, 0.05, 0.1, 0.2],
+    "subsample": [0.7, 0.8, 1.0],
+    "colsample_bytree": [0.7, 0.8, 1.0],
+    "min_child_weight": [1, 3, 5],
+    "gamma": [0, 0.1, 0.2]
+}
+
+xgb_search = RandomizedSearchCV(
+    estimator=xgb,
+    param_distributions=xgb_params,
+    n_iter=20,
+    scoring="roc_auc",
+    cv=5,
+    random_state=42,
+    n_jobs=-1
+)
+
+xgb_search.fit(X_train, y_train)
+
+best_xgb = xgb_search.best_estimator_
+
+print("\nBest XGBoost Parameters:")
+print(xgb_search.best_params_)
+
+
+# ============================================================
+# 8. EVALUATION FUNCTION
+# ============================================================
+
+def evaluate_model(model, X_test, y_test, model_name):
+
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]
+
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, zero_division=0)
+    recall = recall_score(y_test, y_pred, zero_division=0)
+    f1 = f1_score(y_test, y_pred, zero_division=0)
+    roc_auc = roc_auc_score(y_test, y_prob)
+
+    print("\n" + "="*50)
+    print(model_name)
+    print("="*50)
+
+    print(f"Accuracy  : {accuracy:.4f}")
+    print(f"Precision : {precision:.4f}")
+    print(f"Recall    : {recall:.4f}")
+    print(f"F1-Score  : {f1:.4f}")
+    print(f"ROC-AUC   : {roc_auc:.4f}")
+
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred, zero_division=0))
+
+    return {
+        "Model": model_name,
+        "Accuracy": accuracy * 100,
+        "Precision": precision,
+        "Recall": recall,
+        "F1-Score": f1,
+        "ROC-AUC": roc_auc
+    }
+
+
+# ============================================================
+# 9. EVALUATE BOTH MODELS
+# ============================================================
+
+rf_results = evaluate_model(
+    best_rf,
+    X_test,
+    y_test,
+    "Random Forest"
+)
+
+xgb_results = evaluate_model(
+    best_xgb,
+    X_test,
+    y_test,
+    "XGBoost"
+)
+
+
+# ============================================================
+# 10. MODEL COMPARISON
+# ============================================================
+
+results = pd.DataFrame([
+    rf_results,
+    xgb_results
+])
+
+print("\nMODEL COMPARISON")
+print(results.round(4))
+
+
+# ============================================================
+# 11. CONFUSION MATRIX - RANDOM FOREST
+# ============================================================
+
+ConfusionMatrixDisplay.from_estimator(
+    best_rf,
+    X_test,
+    y_test
+)
+
+plt.title("Random Forest Confusion Matrix")
+plt.show()
+
+
+# ============================================================
+# 12. CONFUSION MATRIX - XGBOOST
+# ============================================================
+
+ConfusionMatrixDisplay.from_estimator(
+    best_xgb,
+    X_test,
+    y_test
+)
+
+plt.title("XGBoost Confusion Matrix")
+plt.show()
+
+
+# ============================================================
+# 13. ROC CURVE COMPARISON
+# ============================================================
+
+RocCurveDisplay.from_estimator(
+    best_rf,
+    X_test,
+    y_test,
+    name="Random Forest"
+)
+
+RocCurveDisplay.from_estimator(
+    best_xgb,
+    X_test,
+    y_test,
+    name="XGBoost"
+)
+
+plt.title("ROC Curve Comparison")
+plt.show()
+
+
+# ============================================================
+# 14. RANDOM FOREST FEATURE IMPORTANCE
+# ============================================================
+
+rf_importance = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": best_rf.feature_importances_
+}).sort_values(
+    by="Importance",
+    ascending=False
+)
+
+print("\nRandom Forest Feature Importance:")
+print(rf_importance.head(15))
+
+plt.figure(figsize=(10, 6))
+
+plt.barh(
+    rf_importance["Feature"].head(15)[::-1],
+    rf_importance["Importance"].head(15)[::-1]
+)
+
+plt.xlabel("Feature Importance")
+plt.ylabel("Features")
+plt.title("Random Forest Feature Importance")
+plt.show()
+
+
+# ============================================================
+# 15. XGBOOST FEATURE IMPORTANCE
+# ============================================================
+
+xgb_importance = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": best_xgb.feature_importances_
+}).sort_values(
+    by="Importance",
+    ascending=False
+)
+
+print("\nXGBoost Feature Importance:")
+print(xgb_importance.head(15))
+
+plt.figure(figsize=(10, 6))
+
+plt.barh(
+    xgb_importance["Feature"].head(15)[::-1],
+    xgb_importance["Importance"].head(15)[::-1]
+)
+
+plt.xlabel("Feature Importance")
+plt.ylabel("Features")
+plt.title("XGBoost Feature Importance")
+plt.show()
